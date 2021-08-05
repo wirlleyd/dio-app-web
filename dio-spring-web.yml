@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dio-web-env
+  namespace: dio-app
+data:
+  REACT_API_API_URL: http://api-service:5050
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-dio-deployment
+  namespace: dio-app
+  labels:
+    app: web-dio-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-dio-deployment
+  template:
+    metadata:
+      labels:
+        app: web-dio-deployment
+    spec:
+      hostname: web-dio-deployment
+      containers:
+        - name: web-dio-deployment
+          image: becaregistry.azurecr.io/wirlleyd/dio-spring-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: dio-web-env
+      imagePullSecrets:
+        - name: becaregistry-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-dio-service
+  namespace: dio-app
+  labels:
+    app: web-dio-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-dio-deployment
+  ports:
+    - port: 3000
+      targetPort: 80
+      protocol: TCP
